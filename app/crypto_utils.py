@@ -1,6 +1,12 @@
 import hmac
 import hashlib
 from cryptography.fernet import Fernet  # type: ignore[import]
+
+import secrets
+
+def generate_token() -> str:
+    return secrets.token_urlsafe(24)
+
 def encrypt_pan(card_number: str, key: bytes)->str:
     f= Fernet(key)
     encrypted_bytes = f.encrypt(card_number.encode())
@@ -11,13 +17,15 @@ def decrypt_pan(ciphertext: str,key: bytes)->str:
     decrypted_bytes = f.decrypt(ciphertext.encode())
     return decrypted_bytes.decode()
 
-def normalise(card_number: str):
+def normalize(card_number: str)->str:
     cleaned = card_number.replace("-","").replace(" ","")
     return cleaned
 
 def luhn_check(card_number: str) ->bool:
+    if not card_number.isdigit():
+        return False
     reversed_number = card_number[::-1]
-    total=0;
+    total=0
     
     for index,digit in enumerate(reversed_number):
         num = int(digit)

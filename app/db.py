@@ -22,7 +22,7 @@ def init_db():
 
     conn.execute("""
         CREATE TABLE IF NOT EXISTS audit_log (
-            id INTEGER PRIMARY KEY, 
+            id INTEGER PRIMARY KEY AUTOINCREMENTDON, 
             token TEXT NOT NULL, 
             action TEXT NOT NULL, 
             role TEXT NOT NULL, 
