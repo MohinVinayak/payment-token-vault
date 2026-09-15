@@ -4,6 +4,8 @@ from contextlib import asynccontextmanager
 from datetime import datetime
 
 from fastapi import FastAPI, Depends, HTTPException, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 from app import services
@@ -47,7 +49,22 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="Payment Token Vault", lifespan=lifespan)
+
+# Allow frontend to communicate with API
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # In production, this would be specific domains
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 app.middleware("http")(rate_limit_middleware)
+
+@app.get("/", include_in_schema=False)
+def serve_frontend():
+    """Serve the frontend UI."""
+    return FileResponse("static/index.html")
 
 
 # ── Request / Response Models ──────────────────────────

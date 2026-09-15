@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Token Vault</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom scrollbar for dark mode */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #1f2937; }
+        ::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 4px; }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-100 min-h-screen font-sans">
+    
+    <div class="max-w-4xl mx-auto p-6">
+        <!-- Header -->
+        <header class="flex justify-between items-center mb-10 pb-4 border-b border-gray-700">
+            <div>
+                <h1 class="text-3xl font-bold text-blue-400">Payment Token Vault</h1>
+                <p class="text-gray-400 text-sm mt-1">Secure PCI-DSS compliant tokenization</p>
+            </div>
+            <div id="auth-status" class="text-sm">
+                <!-- Populated by JS -->
+            </div>
+        </header>
+
+        <!-- Login Section (Visible when logged out) -->
+        <section id="login-section" class="bg-gray-800 p-6 rounded-lg shadow-lg mb-8 max-w-md mx-auto">
+            <h2 class="text-xl font-semibold mb-4">Service Login</h2>
+            <form id="login-form" class="space-y-4">
+                <div>
+                    <label class="block text-sm text-gray-400 mb-1">Username</label>
+                    <input type="text" id="username" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-blue-500" required>
+                </div>
+                <div>
+                    <label class="block text-sm text-gray-400 mb-1">Password</label>
+                    <input type="password" id="password" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-blue-500" required>
+                </div>
+                <div class="flex gap-4">
+                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded transition">Login</button>
+                    <button type="button" id="btn-register" class="w-full bg-gray-600 hover:bg-gray-500 text-white font-semibold py-2 px-4 rounded transition">Register</button>
+                </div>
+                <div id="login-error" class="text-red-400 text-sm hidden mt-2"></div>
+                <div id="login-success" class="text-green-400 text-sm hidden mt-2"></div>
+            </form>
+        </section>
+
+        <!-- Main Vault Dashboard (Visible when logged in) -->
+        <section id="dashboard-section" class="hidden space-y-8">
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <!-- Tokenize Panel -->
+                <div class="bg-gray-800 p-6 rounded-lg shadow-lg border border-gray-700">
+                    <h2 class="text-xl font-semibold mb-2 text-green-400">Tokenize Card</h2>
+                    <p class="text-xs text-gray-400 mb-4">Encrypts PAN and generates secure token.</p>
+                    <form id="tokenize-form" class="space-y-4">
+                        <input type="text" id="card-number" placeholder="16-digit Card Number" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white" required>
+                        <button type="submit" class="w-full bg-green-600 hover:bg-green-700 py-2 rounded font-semibold transition">Tokenize</button>
+                    </form>
+                    <div id="tokenize-result" class="mt-4 hidden p-3 bg-gray-900 rounded border border-gray-700 font-mono text-sm break-all"></div>
+                </div>
+
+                <!-- Detokenize Panel -->
+                <div class="bg-gray-800 p-6 rounded-lg shadow-lg border border-gray-700">
+                    <h2 class="text-xl font-semibold mb-2 text-red-400">Detokenize (Admin Only)</h2>
+                    <p class="text-xs text-gray-400 mb-4">Decrypts token to reveal raw PAN.</p>
+                    <form id="detokenize-form" class="space-y-4">
+                        <input type="text" id="vault-token" placeholder="Vault Token" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white" required>
+                        <input type="text" id="reason" placeholder="Reason (Audit log)" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white" required>
+                        <button type="submit" class="w-full bg-red-600 hover:bg-red-700 py-2 rounded font-semibold transition">Detokenize</button>
+                    </form>
+                    <div id="detokenize-result" class="mt-4 hidden p-3 bg-gray-900 rounded border border-gray-700 font-mono text-sm text-center text-xl tracking-widest text-red-300"></div>
+                </div>
+            </div>
+
+            <!-- Admin Audit Log -->
+            <div class="bg-gray-800 p-6 rounded-lg shadow-lg border border-gray-700">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-semibold text-yellow-400">Audit Log (Admin Only)</h2>
+                    <button onclick="fetchAuditLog()" class="text-sm bg-gray-700 hover:bg-gray-600 px-3 py-1 rounded">Refresh</button>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm text-left">
+                        <thead class="text-xs text-gray-400 uppercase bg-gray-900">
+                            <tr>
+                                <th class="px-4 py-3">Timestamp</th>
+                                <th class="px-4 py-3">Action</th>
+                                <th class="px-4 py-3">Role</th>
+                                <th class="px-4 py-3">Token ID</th>
+                                <th class="px-4 py-3">Reason</th>
+                            </tr>
+                        </thead>
+                        <tbody id="audit-table-body" class="divide-y divide-gray-700">
+                            <!-- Rows added by JS -->
+                        </tbody>
+                    </table>
+                </div>
+                <div id="audit-error" class="text-red-400 text-sm hidden mt-4"></div>
+            </div>
+
+        </section>
+    </div>
+
+    <!-- Vanilla JavaScript API Client -->
+    <script>
+        const API_URL = 'http://127.0.0.1:8000';
+        let jwtToken = localStorage.getItem('vault_jwt') || null;
+
+        // UI State Management
+        function updateUI() {
+            if (jwtToken) {
+                document.getElementById('login-section').classList.add('hidden');
+                document.getElementById('dashboard-section').classList.remove('hidden');
+                document.getElementById('auth-status').innerHTML = `
+                    <span class="text-green-400 flex items-center gap-2">
+                        <div class="w-2 h-2 bg-green-500 rounded-full"></div> Authenticated
+                        <button onclick="logout()" class="ml-4 text-xs bg-gray-700 hover:bg-gray-600 px-2 py-1 rounded text-white">Logout</button>
+                    </span>`;
+            } else {
+                document.getElementById('login-section').classList.remove('hidden');
+                document.getElementById('dashboard-section').classList.add('hidden');
+                document.getElementById('auth-status').innerHTML = '<span class="text-gray-500">Not authenticated</span>';
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('vault_jwt');
+            jwtToken = null;
+            updateUI();
+        }
+
+        // Helper: Fetch with Authorization Header
+        async function fetchAPI(endpoint, method, body = null) {
+            const headers = { 'Content-Type': 'application/json' };
+            if (jwtToken) {
+                headers['Authorization'] = `Bearer ${jwtToken}`;
+            }
+            
+            const options = { method, headers };
+            if (body) options.body = JSON.stringify(body);
+
+            const res = await fetch(`${API_URL}${endpoint}`, options);
+            const data = await res.json();
+            
+            if (!res.ok) {
+                throw new Error(data.detail || data.message || 'Request failed');
+            }
+            return data;
+        }
+
+        // Event Listeners
+        document.getElementById('btn-register').addEventListener('click', async () => {
+            const errBox = document.getElementById('login-error');
+            const succBox = document.getElementById('login-success');
+            errBox.classList.add('hidden');
+            succBox.classList.add('hidden');
+            
+            try {
+                const data = await fetchAPI('/register', 'POST', {
+                    username: document.getElementById('username').value,
+                    password: document.getElementById('password').value,
+                    role: "service"
+                });
+                succBox.textContent = data.message + "! You can now click Login.";
+                succBox.classList.remove('hidden');
+            } catch (err) {
+                errBox.textContent = err.message;
+                errBox.classList.remove('hidden');
+            }
+        });
+
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const errBox = document.getElementById('login-error');
+            const succBox = document.getElementById('login-success');
+            errBox.classList.add('hidden');
+            if (succBox) succBox.classList.add('hidden');
+
+            try {
+                const data = await fetchAPI('/login', 'POST', {
+                    username: e.target.username.value,
+                    password: e.target.password.value
+                });
+                jwtToken = data.access_token;
+                localStorage.setItem('vault_jwt', jwtToken);
+                updateUI();
+                e.target.reset();
+                fetchAuditLog(); // Try fetching logs if admin
+            } catch (err) {
+                errBox.textContent = err.message;
+                errBox.classList.remove('hidden');
+            }
+        });
+
+        document.getElementById('tokenize-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const resBox = document.getElementById('tokenize-result');
+            resBox.classList.remove('hidden');
+            resBox.innerHTML = '<span class="text-gray-400">Processing...</span>';
+
+            try {
+                const data = await fetchAPI('/tokenize', 'POST', {
+                    card_number: e.target['card-number'].value
+                });
+                resBox.innerHTML = `
+                    <div class="text-green-400 mb-1">Success</div>
+                    <div><span class="text-gray-500">Token:</span> ${data.token}</div>
+                    <div><span class="text-gray-500">Masked:</span> ${data.masked_pan}</div>
+                `;
+                e.target.reset();
+            } catch (err) {
+                resBox.innerHTML = `<span class="text-red-400">Error: ${err.message}</span>`;
+            }
+        });
+
+        document.getElementById('detokenize-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const resBox = document.getElementById('detokenize-result');
+            resBox.classList.remove('hidden');
+            resBox.innerHTML = '<span class="text-gray-400 text-sm">Decrypting...</span>';
+
+            try {
+                const data = await fetchAPI('/detokenize', 'POST', {
+                    token: e.target['vault-token'].value,
+                    reason: e.target['reason'].value
+                });
+                resBox.innerHTML = data.pan;
+                e.target.reset();
+                fetchAuditLog(); // Refresh logs to show this action
+            } catch (err) {
+                resBox.innerHTML = `<span class="text-red-400 text-sm">Error: ${err.message}</span>`;
+            }
+        });
+
+        async function fetchAuditLog() {
+            if (!jwtToken) return;
+            const errBox = document.getElementById('audit-error');
+            const tbody = document.getElementById('audit-table-body');
+            errBox.classList.add('hidden');
+            
+            try {
+                const data = await fetchAPI('/audit-log', 'GET');
+                tbody.innerHTML = data.map(log => `
+                    <tr class="hover:bg-gray-800 transition">
+                        <td class="px-4 py-2 text-gray-400 whitespace-nowrap">${new Date(log.timestamp).toLocaleString()}</td>
+                        <td class="px-4 py-2 font-medium text-blue-400">${log.action}</td>
+                        <td class="px-4 py-2"><span class="bg-gray-700 px-2 py-1 rounded text-xs">${log.role}</span></td>
+                        <td class="px-4 py-2 font-mono text-gray-500 text-xs">${log.token}</td>
+                        <td class="px-4 py-2 text-gray-400">${log.reason || '-'}</td>
+                    </tr>
+                `).join('');
+            } catch (err) {
+                tbody.innerHTML = '';
+                if (err.message !== 'Admin role required') {
+                    errBox.textContent = `Audit log error: ${err.message}`;
+                    errBox.classList.remove('hidden');
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="5" class="px-4 py-4 text-center text-gray-500">You must be an admin to view audit logs.</td></tr>';
+                }
+            }
+        }
+
+        // Initialize UI on load
+        updateUI();
+        if (jwtToken) fetchAuditLog();
+    </script>
+</body>
+</html>
