@@ -178,6 +178,18 @@ def test_tokenize_idempotency_key():
     assert resp1.json() == resp2.json()
 
 
+def test_tokenize_multi_tenant_isolation():
+    token1 = register_and_login("tenant_A", "password123")
+    token2 = register_and_login("tenant_B", "password123")
+    
+    # Both tenants tokenize the exact same card
+    resp1 = client.post("/tokenize", json={"card_number": "4242424242424242"}, headers=auth_header(token1))
+    resp2 = client.post("/tokenize", json={"card_number": "4242424242424242"}, headers=auth_header(token2))
+    
+    # They should receive DIFFERENT tokens (strict isolation)
+    assert resp1.json()["token"] != resp2.json()["token"]
+
+
 # ── Detokenize Tests ───────────────────────────────────
 
 def test_detokenize_admin_success():

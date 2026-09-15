@@ -19,13 +19,15 @@ def init_db():
     conn.execute("""
         CREATE TABLE IF NOT EXISTS vault (
             token TEXT PRIMARY KEY,
+            username TEXT NOT NULL,
             pan_encrypted TEXT NOT NULL,
-            pan_hash TEXT UNIQUE NOT NULL,
+            pan_hash TEXT NOT NULL,
             masked_pan TEXT NOT NULL,
             created_at TEXT NOT NULL,
             last_used_at TEXT,
             expires_at TEXT,
-            is_revoked INTEGER DEFAULT 0
+            is_revoked INTEGER DEFAULT 0,
+            UNIQUE(username, pan_hash)
         )
     """)
 

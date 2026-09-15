@@ -15,10 +15,10 @@ def fetch_by_token(token: str) -> dict | None:
     return row
 
 
-def find_by_hash(pan_hash: str) -> dict | None:
-    """Find a vault record by its PAN hash (used for dedup)."""
+def find_by_user_and_hash(username: str, pan_hash: str) -> dict | None:
+    """Find a vault record by user and PAN hash (used for tenant-isolated dedup)."""
     conn = get_connection()
-    cursor = conn.execute("SELECT * FROM vault WHERE pan_hash = ?", (pan_hash,))
+    cursor = conn.execute("SELECT * FROM vault WHERE username = ? AND pan_hash = ?", (username, pan_hash))
     row = cursor.fetchone()
     conn.close()
     return row
@@ -35,6 +35,7 @@ def token_exists(token: str) -> bool:
 
 def insert_token(
     token: str,
+    username: str,
     pan_encrypted: str,
     pan_hash: str,
     masked_pan: str,
@@ -45,9 +46,9 @@ def insert_token(
     now = datetime.now(UTC).isoformat()
     conn.execute(
         """INSERT INTO vault
-           (token, pan_encrypted, pan_hash, masked_pan, created_at, last_used_at, expires_at, is_revoked)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
-        (token, pan_encrypted, pan_hash, masked_pan, now, None, expires_at, 0),
+           (token, username, pan_encrypted, pan_hash, masked_pan, created_at, last_used_at, expires_at, is_revoked)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+        (token, username, pan_encrypted, pan_hash, masked_pan, now, None, expires_at, 0),
     )
     conn.commit()
     conn.close()

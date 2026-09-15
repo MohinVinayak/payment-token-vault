@@ -143,6 +143,7 @@ def tokenize_endpoint(
     try:
         return services.tokenize(
             req.card_number,
+            username=current_user["sub"],
             role=current_user["role"],
             idempotency_key=idempotency_key,
         )

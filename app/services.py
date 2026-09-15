@@ -57,10 +57,11 @@ def login(username: str, password: str) -> dict:
 
 def tokenize(
     card_number: str,
+    username: str,
     role: str = "service",
     idempotency_key: str | None = None,
 ) -> dict:
-    """Validate, encrypt, and tokenize a card number."""
+    """Validate, encrypt, and tokenize a card number, isolated per user."""
 
     # Check idempotency — return cached response if we've seen this key
     if idempotency_key:
@@ -72,9 +73,9 @@ def tokenize(
     if not luhn_check(normalized):
         raise ValueError("Invalid card number")
 
-    # Dedup — check if this card was already tokenized
+    # Dedup — check if this card was already tokenized by THIS user
     pan_hash = hash_pan(normalized, HMAC_SECRET)
-    existing = repository.find_by_hash(pan_hash)
+    existing = repository.find_by_user_and_hash(username, pan_hash)
     if existing:
         repository.log_event(existing["token"], "token_lookup", role)
         result = {
@@ -93,6 +94,7 @@ def tokenize(
 
     repository.insert_token(
         token=token,
+        username=username,
         pan_encrypted=pan_encrypted,
         pan_hash=pan_hash,
         masked_pan=masked,
