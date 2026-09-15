@@ -1,0 +1,7 @@
+fastapi[standard]
+cryptography
+python-dotenv
+PyJWT
+bcrypt
+httpx2
+pytest

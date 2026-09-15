@@ -1,5 +1,6 @@
 venv/
+.venv/
 vault.db
 .env
 __pycache__/
-.venv/
+.dist/
