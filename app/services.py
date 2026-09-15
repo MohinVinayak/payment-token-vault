@@ -74,7 +74,7 @@ def tokenize(
         raise ValueError("Invalid card number")
 
     # Dedup — check if this card was already tokenized by THIS user
-    pan_hash = hash_pan(normalized, HMAC_SECRET)
+    pan_hash = hash_pan(normalized, username, HMAC_SECRET)
     existing = repository.find_by_user_and_hash(username, pan_hash)
     if existing:
         repository.log_event(existing["token"], "token_lookup", role)

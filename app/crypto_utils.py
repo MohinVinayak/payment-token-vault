@@ -53,6 +53,7 @@ def mask_pan(card_number: str) -> str:
     return f"**** **** **** {last_four}"
 
 
-def hash_pan(card_number: str, secret: bytes) -> str:
-    """Create a keyed HMAC-SHA256 hash of the card number (for dedup lookups)."""
-    return hmac.new(secret, card_number.encode(), hashlib.sha256).hexdigest()
+def hash_pan(card_number: str, username: str, secret: bytes) -> str:
+    """Create a keyed HMAC-SHA256 hash (Privacy-First: scoped to the username)."""
+    payload = f"{username}:{card_number}".encode()
+    return hmac.new(secret, payload, hashlib.sha256).hexdigest()
