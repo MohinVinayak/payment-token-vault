@@ -128,6 +128,14 @@
         function logout() {
             localStorage.removeItem('vault_jwt');
             jwtToken = null;
+            
+            // Clear all previous session data from the screen
+            document.getElementById('tokenize-form').reset();
+            document.getElementById('detokenize-form').reset();
+            document.getElementById('tokenize-result').classList.add('hidden');
+            document.getElementById('detokenize-result').classList.add('hidden');
+            document.getElementById('audit-table-body').innerHTML = '';
+            
             updateUI();
         }
 
